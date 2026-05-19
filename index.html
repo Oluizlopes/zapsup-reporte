@@ -25,7 +25,6 @@
         .boas-vindas h2 { margin: 0 0 5px 0; color: #333; }
         .boas-vindas p { margin: 0; color: #666; font-size: 14px; }
 
-        /* Ajustado para ficar fixo e centralizado na página web */
         #modal-erro-zapsup {
             background: white; border-radius: 15px; padding: 20px; width: 100%; max-width: 380px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.15); font-family: sans-serif;
@@ -64,7 +63,7 @@
     <div id="modal-erro-zapsup">
         <h4 style="margin:0 0 15px 0; color:#333;">Reportar Problema</h4>
 
-        <input type="text" id="err-protocolo" class="campo-erro" placeholder="Protocolo (13 dígitos) *">
+        <input type="text" id="err-protocolo" class="campo-erro" placeholder="Protocolo (13 digitos) *">
         <div id="msg-erro-prot" class="error-msg">O protocolo deve ter exatamente 13 dígitos.</div>
 
         <input type="text" id="err-atendente" class="campo-erro" placeholder="Atendente">
@@ -72,7 +71,7 @@
         <span class="secao-label">📌 Central de Atendimento</span>
         <div style="display:flex; gap:5px; margin-bottom:8px;">
             <button class="btn-central" data-val="Acre">Acre</button>
-            <button class="btn-central" data-val="Piaui">Piauí</button>
+            <button class="btn-central" data-val="Piauí">Piauí</button>
             <button class="btn-central" data-val="Bahia">Bahia</button>
             <button class="btn-central" id="btn-central-mais" data-val="Outra">+</button>
         </div>
@@ -80,11 +79,11 @@
 
         <span class="secao-label">⏱️ Duração Aproximada da Chamada (MIN)</span>
         <div class="pill-container" id="container-tempo">
-            <div class="pill pill-tempo" data-val="10">10</div>
-            <div class="pill pill-tempo" data-val="15">15</div>
-            <div class="pill pill-tempo" data-val="20">20</div>
-            <div class="pill pill-tempo" data-val="30">30</div>
-            <div class="pill pill-tempo" data-val="40">40</div>
+            <div class="pill pill-tempo" data-val="10">10m</div>
+            <div class="pill pill-tempo" data-val="15">15m</div>
+            <div class="pill pill-tempo" data-val="20">20m</div>
+            <div class="pill pill-tempo" data-val="30">30m</div>
+            <div class="pill pill-tempo" data-val="40">40m</div>
             <div class="pill pill-tempo" id="btn-tempo-mais" data-val="manual">+</button>
         </div>
         <input type="number" id="err-tempo-manual" class="campo-erro" placeholder="Minutos" style="display:none;">
@@ -107,6 +106,7 @@
 
             <span class="secao-label">🗣 Problemas com o Atendente</span>
             <div class="pill-container" id="container-atendimento">
+                <div class="pill pill-atend" data-filter="SIM,PARCIALMENTE,NÃO" data-val="demorando para atender, fila de espera">Fila de espera demorando</div>
                 <div class="pill pill-atend" data-filter="SIM,PARCIALMENTE,NÃO" data-val="despreparado">Despreparado</div>
                 <div class="pill pill-atend" data-filter="PARCIALMENTE,NÃO" data-val="confirmou trocas, mas não realizou">Confirmou e não trocou</div>
                 <div class="pill pill-atend" data-filter="NÃO" data-val="recusou tentar realizar trocas">Recusou tentar</div>
@@ -116,11 +116,12 @@
             <div id="wrapper-previsao" class="hidden-section">
                 <span class="secao-label">⏳ Previsão de Retorno?</span>
                 <div class="pill-container" id="container-previsao">
-                    <div class="pill pill-previsao" data-val="10min">10 min</div>
-                    <div class="pill pill-previsao" data-val="15min">15 min</div>
-                    <div class="pill pill-previsao" data-val="30min">30 min</div>
-                    <div class="pill pill-previsao" data-val="1h">1 hora</div>
-                    <div class="pill pill-previsao" data-val="2h">2 horas</div>
+                    <div class="pill pill-previsao" data-val="15m">15m</div>
+                    <div class="pill pill-previsao" data-val="30m">30m</div>
+                    <div class="pill pill-previsao" data-val="1h">1h</div>
+                    <div class="pill pill-previsao" data-val="2h">2h</div>
+                    <div class="pill pill-previsao" data-val="6h">6h</div>
+                    <div class="pill pill-previsao" data-val="24h">24h</div>
                     <div class="pill pill-previsao" id="btn-previsao-mais" data-val="manual">+</button>
                 </div>
                 <input type="text" id="err-previsao-manual" class="campo-erro" placeholder="Digite o tempo de previsão (ex: 45min, Sem Previsão)" style="display:none;">
@@ -247,26 +248,30 @@
             let falhasAtend = Array.from(document.querySelectorAll('#container-atendimento .pill.selected')).map(p => p.dataset.val);
 
             let lines = [];
-            if (protocolo) lines.push(`Protocolo: *${protocolo}*`);
-            if (atendente) lines.push(`Atendente: *${atendente}*`);
+            if (protocolo) lines.push(`Protocolo: ${protocolo}`);
+            if (atendente) lines.push(`Atendente: ${atendente}`);
 
             let subLine = [];
-            if (cenFinal) subLine.push(`Central: *${cenFinal}*`);
-            if (tmpFinal) subLine.push(`Duração: *${tmpFinal}min*`);
+            if (cenFinal) subLine.push(`Central: ${cenFinal}`);
+            if (tmpFinal) {
+                // Adiciona o 'm' apenas se o usuário digitou manualmente (já que as pílulas novas já vêm com 'm')
+                let sufixo = tempoSelecionado === 'manual' ? 'm' : '';
+                subLine.push(`Duração: ${tmpFinal}${sufixo}`);
+            }
             if (subLine.length > 0) lines.push(subLine.join(' '));
 
             if (lines.length > 0) lines.push("");
 
-            if (statusTroca) lines.push(`Trocas realizadas? *${statusTroca}*`);
+            if (statusTroca) lines.push(`Trocas realizadas? ${statusTroca}`);
 
-            if (falhasSis.length > 0) lines.push(`- *Sistema ${falhasSis.join(', ')}*`);
+            if (falhasSis.length > 0) lines.push(`- Sistema ${falhasSis.join(', ')}`);
 
             const wrapperPrevisaoVisivel = document.getElementById('wrapper-previsao').style.display === 'block';
             if (wrapperPrevisaoVisivel && prvFinal) {
-                lines.push(`- *Previsão de retorno em ${prvFinal}*`);
+                lines.push(`- Previsão de retorno em ${prvFinal}`);
             }
 
-            if (falhasAtend.length > 0) lines.push(`- *Atendente ${falhasAtend.join(', ')}*`);
+            if (falhasAtend.length > 0) lines.push(`- Atendente ${falhasAtend.join(', ')}`);
             if (obs) lines.push(obs);
 
             let msg = lines.join('\n');
