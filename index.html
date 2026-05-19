@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zapsup - Reporte Inteligente V4</title>
+    <style>
+        /* Centraliza o botão ou o fundo na página web */
+        body {
+            background-color: #f4f6f9;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .boas-vindas {
+            text-align: center;
+            color: #555;
+        }
+        .boas-vindas h2 { margin-bottom: 5px; color: #333; }
+
+        /* Estilos originais do seu script */
+        #modal-erro-zapsup {
+            position: fixed; bottom: 75px; right: 20px; z-index: 9999;
+            background: white; border-radius: 15px; padding: 18px; width: 360px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); font-family: sans-serif;
+            display: none; border: 1px solid #eee; max-height: 85vh; overflow-y: auto;
+        }
+        .campo-erro { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; box-sizing: border-box; outline: none; }
+        .campo-erro.invalid { border-color: #e74c3c !important; background-color: #fff5f5; }
+        .error-msg { color: #e74c3c; font-size: 10px; margin: -5px 0 10px 5px; display: none; font-weight: bold; }
+        .pill-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+        .pill {
+            padding: 6px 12px; border-radius: 20px; border: 1px solid #ddd;
+            font-size: 11px; cursor: pointer; background: #f8f9fa; transition: 0.2s;
+        }
+        .pill.selected { background: #0d6efd; color: white; border-color: #0d6efd; }
+        .pill-atend.selected { background: #198754; color: white; border-color: #198754; }
+        .pill-ura.selected { background: #6f42c1; color: white; border-color: #6f42c1; }
+        .pill-tempo.selected { background: #ffc107; color: #212529; border-color: #ffc107; }
+        .pill-previsao.selected { background: #fd7e14; color: white; border-color: #fd7e14; }
+        .btn-central { flex: 1; padding: 8px; font-size: 11px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; background: #fff; }
+        .btn-central.active { background: #6c757d; color: white; border-color: #6c757d; }
+        .secao-label { font-size: 10px; font-weight: bold; color: #999; text-transform: uppercase; margin: 10px 0 5px 0; display: block; }
+        .hidden-section { display: none; }
+        #btn-reportar-erro { position: fixed; bottom: 20px; right: 10px; z-index: 9999; width: 45px; height: 45px; background: #e74c3c; color: white; border-radius: 50%; border: none; cursor: pointer; font-size: 22px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .footer-botoes { display: flex; gap: 10px; margin-top: 10px; }
+        #btn-limpar-campos { background: #f8f9fa; color: #666; border: 1px solid #ddd; padding: 8px; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1; font-size: 12px; }
+        #btn-enviar-final { background: #25d366; color: white; border: none; padding: 16px; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 2; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+    <div class="boas-vindas">
+        <h2>Zapsup - Reporte Inteligente</h2>
+        <p>Clique no botão 📝 no canto inferior direito para abrir o formulário.</p>
+    </div>
+
+    <!-- O HTML do seu modal que antes era gerado por JS agora fica direto na página -->
+    <div id="modal-erro-zapsup">
+        <h4 style="margin:0 0 15px 0; color:#333;">Reportar Problema</h4>
+
+        <input type="text" id="err-protocolo" class="campo-erro" placeholder="Protocolo (13 digits) *">
+        <div id="msg-erro-prot" class="error-msg">O protocolo deve ter exatamente 13 dígitos.</div>
+
+        <input type="text" id="err-atendente" class="campo-erro" placeholder="Atendente">
+
+        <span class="secao-label">📌 Central de Atendimento</span>
+        <div style="display:flex; gap:5px; margin-bottom:8px;">
+            <button class="btn-central" data-val="Acre">Acre</button>
+            <button class="btn-central" data-val="Piaui">Piauí</button>
+            <button class="btn-central" data-val="Bahia">Bahia</button>
+            <button class="btn-central" id="btn-central-mais" data-val="Outra">+</button>
+        </div>
+        <input type="text" id="err-central-outra" class="campo-erro" placeholder="Qual central?" style="display:none;">
+
+        <span class="secao-label">⏱️ Duração Aproximada da Chamada (MIN)</span>
+        <div class="pill-container" id="container-tempo">
+            <div class="pill pill-tempo" data-val="10">10</div>
+            <div class="pill pill-tempo" data-val="15">15</div>
+            <div class="pill pill-tempo" data-val="20">20</div>
+            <div class="pill pill-tempo" data-val="30">30</div>
+            <div class="pill pill-tempo" data-val="40">40</div>
+            <div class="pill pill-tempo" id="btn-tempo-mais" data-val="manual">+</button>
+        </div>
+        <input type="number" id="err-tempo-manual" class="campo-erro" placeholder="Minutos" style="display:none;">
+
+        <span class="secao-label">➡️ As trocas foram realizadas?</span>
+        <div class="pill-container" id="container-ura-main">
+            <div class="pill pill-ura" data-val="NÃO">Base Não</div>
+            <div class="pill pill-ura" data-val="PARCIALMENTE">ℹ️ Parcialmente</div>
+            <div class="pill pill-ura" data-val="SIM">✅ Sim</div>
+        </div>
+
+        <div id="wrapper-problemas" class="hidden-section">
+            <span class="secao-label">💻 Problemas com o Sistema</span>
+            <div class="pill-container" id="container-sistema">
+                <div class="pill" data-filter="SIM,PARCIALMENTE,NÃO" data-val="demorando para concluir trocas">Demorou para trocar</div>
+                <div class="pill" data-filter="PARCIALMENTE,NÃO" data-val="caiu">Caiu</div>
+                <div class="pill" data-filter="PARCIALMENTE,NÃO" data-val="apresentou erro">Erro</div>
+                <div class="pill" data-filter="NÃO" data-val="indisponível">Indisponível</div>
+            </div>
+
+            <span class="secao-label">🗣 Problemas com o Atendente</span>
+            <div class="pill-container" id="container-atendimento">
+                <div class="pill pill-atend" data-filter="SIM,PARCIALMENTE,NÃO" data-val="despreparado">Despreparado</div>
+                <div class="pill pill-atend" data-filter="PARCIALMENTE,NÃO" data-val="confirmou trocas, mas não realizou">Confirmou e não trocou</div>
+                <div class="pill pill-atend" data-filter="NÃO" data-val="recusou tentar realizar trocas">Recusou tentar</div>
+                <div class="pill pill-atend" data-filter="NÃO" data-val="desligou sem realizar trocas">Desligou sem confirmar</div>
+            </div>
+
+            <div id="wrapper-previsao" class="hidden-section">
+                <span class="secao-label">⏳ Previsão de Retorno?</span>
+                <div class="pill-container" id="container-previsao">
+                    <div class="pill pill-previsao" data-val="10min">10 min</div>
+                    <div class="pill pill-previsao" data-val="15min">15 min</div>
+                    <div class="pill pill-previsao" data-val="30min">30 min</div>
+                    <div class="pill pill-previsao" data-val="1h">1 hora</div>
+                    <div class="pill pill-previsao" data-val="2h">2 horas</div>
+                    <div class="pill pill-previsao" id="btn-previsao-mais" data-val="manual">+</button>
+                </div>
+                <input type="text" id="err-previsao-manual" class="campo-erro" placeholder="Digite o tempo de previsão (ex: 45min, Sem Previsão)" style="display:none;">
+            </div>
+        </div>
+
+        <textarea id="err-obs" class="campo-erro" placeholder="Observações..." rows="2" style="margin-top:10px;"></textarea>
+
+        <div class="footer-botoes">
+            <button id="btn-limpar-campos">🧹 LIMPAR</button>
+            <button id="btn-enviar-final">ENVIAR NO WHATSAPP</button>
+        </div>
+    </div>
+
+    <button id="btn-reportar-erro">📝</button>
+
+    <!-- Toda a lógica original do seu script -->
+    <script>
+        const modal = document.getElementById('modal-erro-zapsup');
+        const btnTrigger = document.getElementById('btn-reportar-erro');
+        
+        btnTrigger.onclick = () => modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
+
+        let statusTroca = "";
+        let centralSelecionada = "";
+        let tempoSelecionado = "";
+        let previsaoSelecionada = "";
+
+        const checarExibicaoPrevisao = () => {
+            const itensCriticos = ['caiu', 'apresentou erro', 'indisponível'];
+            const algumCriticoAtivo = Array.from(document.querySelectorAll('#container-sistema .pill.selected')).some(p => itensCriticos.includes(p.dataset.val));
+
+            const wrapperPrevisao = document.getElementById('wrapper-previsao');
+            if (algumCriticoAtivo) {
+                wrapperPrevisao.style.display = 'block';
+            } else {
+                wrapperPrevisao.style.display = 'none';
+                document.querySelectorAll('.pill-previsao').forEach(b => b.classList.remove('selected'));
+                document.getElementById('err-previsao-manual').style.display = 'none';
+                previsaoSelecionada = "";
+            }
+        };
+
+        document.querySelectorAll('#container-ura-main .pill').forEach(pill => {
+            pill.onclick = function() {
+                document.querySelectorAll('#container-ura-main .pill').forEach(p => p.classList.remove('selected'));
+                this.classList.add('selected');
+                statusTroca = this.dataset.val;
+                document.getElementById('wrapper-problemas').style.display = 'block';
+                document.querySelectorAll('#container-sistema .pill, #container-atendimento .pill').forEach(p => {
+                    const filtros = p.dataset.filter.split(',');
+                    p.style.display = filtros.includes(statusTroca) ? 'block' : 'none';
+                    if (!filtros.includes(statusTroca)) p.classList.remove('selected');
+                });
+                checarExibicaoPrevisao();
+            };
+        });
+
+        document.querySelectorAll('.btn-central').forEach(btn => {
+            btn.onclick = function() {
+                document.querySelectorAll('.btn-central').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                centralSelecionada = this.dataset.val;
+                document.getElementById('err-central-outra').style.display = (this.id === 'btn-central-mais') ? 'block' : 'none';
+            };
+        });
+
+        document.querySelectorAll('.pill-tempo').forEach(p => {
+            p.onclick = function() {
+                document.querySelectorAll('.pill-tempo').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                tempoSelecionado = this.dataset.val;
+                document.getElementById('err-tempo-manual').style.display = (this.id === 'btn-tempo-mais') ? 'block' : 'none';
+            };
+        });
+
+        document.querySelectorAll('.pill-previsao').forEach(p => {
+            p.onclick = function() {
+                document.querySelectorAll('.pill-previsao').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                previsaoSelecionada = this.dataset.val;
+                document.getElementById('err-previsao-manual').style.display = (this.id === 'btn-previsao-mais') ? 'block' : 'none';
+            };
+        });
+
+        const limparFormulario = () => {
+            document.querySelectorAll('.campo-erro').forEach(input => {
+                input.value = "";
+                input.classList.remove('invalid');
+            });
+            document.getElementById('msg-erro-prot').style.display = 'none';
+            document.querySelectorAll('.pill').forEach(pill => pill.classList.remove('selected'));
+            document.querySelectorAll('.btn-central').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('wrapper-problemas').style.display = 'none';
+            document.getElementById('wrapper-previsao').style.display = 'none';
+            document.getElementById('err-central-outra').style.display = 'none';
+            document.getElementById('err-tempo-manual').style.display = 'none';
+            document.getElementById('err-previsao-manual').style.display = 'none';
+            statusTroca = ""; centralSelecionada = ""; tempoSelecionado = ""; previsaoSelecionada = "";
+        };
+
+        document.getElementById('btn-limpar-campos').onclick = limparFormulario;
+
+        document.querySelectorAll('#container-sistema .pill, #container-atendimento .pill').forEach(p => {
+            p.onclick = function() {
+                this.classList.toggle('selected');
+                checarExibicaoPrevisao();
+            };
+        });
+
+        document.getElementById('btn-enviar-final').onclick = function() {
+            const protInput = document.getElementById('err-protocolo');
+            const protocolo = protInput.value.trim();
+            const atendente = document.getElementById('err-atendente').value.trim();
+            const obs = document.getElementById('err-obs').value.trim();
+
+            if (protocolo.length !== 13 || isNaN(protocolo)) {
+                protInput.classList.add('invalid');
+                document.getElementById('msg-erro-prot').style.display = 'block';
+                protInput.focus();
+                return;
+            } else {
+                protInput.classList.remove('invalid');
+                document.getElementById('msg-erro-prot').style.display = 'none';
+            }
+
+            let cenFinal = (centralSelecionada === 'Outra') ? document.getElementById('err-central-outra').value.trim() : centralSelecionada;
+            let tmpFinal = (tempoSelecionado === 'manual') ? document.getElementById('err-tempo-manual').value.trim() : tempoSelecionado;
+            let prvFinal = (previsaoSelecionada === 'manual') ? document.getElementById('err-previsao-manual').value.trim() : previsaoSelecionada;
+
+            let falhasSis = Array.from(document.querySelectorAll('#container-sistema .pill.selected')).map(p => p.dataset.val);
+            let falhasAtend = Array.from(document.querySelectorAll('#container-atendimento .pill.selected')).map(p => p.dataset.val);
+
+            let lines = [];
+            if (protocolo) lines.push(`Protocolo: *${protocolo}*`);
+            if (atendente) lines.push(`Atendente: *${atendente}*`);
+
+            let subLine = [];
+            if (cenFinal) subLine.push(`Central: *${cenFinal}*`);
+            if (tmpFinal) subLine.push(`Duração: *${tmpFinal}min*`);
+            if (subLine.length > 0) lines.push(subLine.join(' '));
+
+            if (lines.length > 0) lines.push("");
+
+            if (statusTroca) lines.push(`Trocas realizadas? *${statusTroca}*`);
+
+            if (falhasSis.length > 0) lines.push(`- *Sistema ${falhasSis.join(', ')}*`);
+
+            const wrapperPrevisaoVisivel = document.getElementById('wrapper-previsao').style.display === 'block';
+            if (wrapperPrevisaoVisivel && prvFinal) {
+                lines.push(`- *Previsão de retorno em ${prvFinal}*`);
+            }
+
+            if (falhasAtend.length > 0) lines.push(`- *Atendente ${falhasAtend.join(', ')}*`);
+            if (obs) lines.push(obs);
+
+            let msg = lines.join('\n');
+
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg.trim())}`, '_blank');
+            modal.style.display = 'none';
+            limparFormulario();
+        };
+    </script>
+</body>
+</html>
