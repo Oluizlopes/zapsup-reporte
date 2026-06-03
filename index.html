@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zapsup - Relatório Inteligente</title>
+    <title>Zapsup - Reporte Inteligente V5</title>
     <style>
         body {
-            background-color: #f4f6f9;
+            background: #f4f6f9;
             font-family: sans-serif;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
@@ -17,19 +16,16 @@
             padding: 20px;
             box-sizing: border-box;
         }
-        .boas-vindas {
-            text-align: center;
-            color: #333;
-            margin-bottom: 20px;
-        }
-        .boas-vindas h2 { margin: 0 0 5px 0; color: #333; }
-        .boas-vindas p { margin: 0; color: #666; font-size: 14px; }
-
         #modal-erro-zapsup {
-            background: white; border-radius: 15px; padding: 20px; width: 100%; max-width: 380px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15); font-family: sans-serif;
-            border: 1px solid #eee; max-height: 85vh; overflow-y: auto;
-            box-sizing: border-box;
+            background: white; 
+            border-radius: 15px; 
+            padding: 24px; 
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            border: 1px solid #eee;
+            max-height: 90vh; 
+            overflow-y: auto;
         }
         .campo-erro { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; box-sizing: border-box; outline: none; }
         .campo-erro.invalid { border-color: #e74c3c !important; background-color: #fff5f5; }
@@ -48,20 +44,25 @@
         .btn-central.active { background: #6c757d; color: white; border-color: #6c757d; }
         .secao-label { font-size: 10px; font-weight: bold; color: #999; text-transform: uppercase; margin: 10px 0 5px 0; display: block; }
         .hidden-section { display: none; }
-        .footer-botoes { display: flex; gap: 10px; margin-top: 10px; }
-        #btn-limpar-campos { background: #f8f9fa; color: #666; border: 1px solid #ddd; padding: 8px; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1; font-size: 12px; }
-        #btn-enviar-final { background: #25d366; color: white; border: none; padding: 16px; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 2; font-size: 12px; }
+        .footer-botoes { display: flex; gap: 10px; margin-top: 15px; }
+
+        #btn-limpar-campos { background: #f8f9fa; color: #666; border: 1px solid #ddd; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1; font-size: 12px; }
+        #btn-enviar-final { background: #25d366; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 2; font-size: 12px; }
+
+        /* Estilos do Gravador de Áudio Inteligente */
+        #btn-gravar-audio { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #0d6efd; background: #fff; color: #0d6efd; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+        #btn-gravar-audio.gravando { background: #dc3545; color: white; border-color: #dc3545; }
+        #btn-gravar-audio.processando { background: #ffc107; color: #212529; border-color: #ffc107; cursor: wait; }
     </style>
 </head>
 <body>
 
-    <div class="boas-vindas">
-        <h2>Zapsup - Relatório Inteligente</h2>
-        <p>Preencha os dados abaixo para gerar a mensagem</p>
-    </div>
-
     <div id="modal-erro-zapsup">
-        <h4 style="margin:0 0 15px 0; color:#333;">Reportar Problema</h4>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h4 style="margin:0; color:#333; font-size: 16px;">Reportar Problema</h4>
+        </div>
+
+        <button id="btn-gravar-audio">🎤 Gravar Áudio (Ditado IA)</button>
 
         <input type="text" id="err-protocolo" class="campo-erro" placeholder="Protocolo (13 digitos) *">
         <div id="msg-erro-prot" class="error-msg">O protocolo deve ter exatamente 13 dígitos.</div>
@@ -90,7 +91,7 @@
 
         <span class="secao-label">➡️ As trocas foram realizadas?</span>
         <div class="pill-container" id="container-ura-main">
-            <div class="pill pill-ura" data-val="NÃO">❎ Não</div>
+            <div class="pill pill-ura" data-val="NÃO">Establishment Não</div>
             <div class="pill pill-ura" data-val="PARCIALMENTE">ℹ️ Parcialmente</div>
             <div class="pill pill-ura" data-val="SIM">✅ Sim</div>
         </div>
@@ -137,6 +138,8 @@
     </div>
 
     <script>
+        const GEMINI_API_KEY = "AQ.Ab8RN6La5GdQbFluaCSTxWnV5W6JywTtFFote93P2qlxk9Pltw";
+
         let statusTroca = "";
         let centralSelecionada = "";
         let tempoSelecionado = "";
@@ -224,6 +227,137 @@
             };
         });
 
+        // ==================================================
+        // 🎤 MOTOR DE CAPTAÇÃO E TRATAMENTO DE ÁUDIO (IA)
+        // ==================================================
+        let mediaRecorder;
+        let audioChunks = [];
+        const btnAudio = document.getElementById('btn-gravar-audio');
+
+        btnAudio.onclick = async () => {
+            if (!mediaRecorder || mediaRecorder.state === "inactive") {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                        btnAudio.className = "processando";
+                        btnAudio.innerText = "⏳ Processando com IA...";
+                        await processarAudioComIA(audioBlob);
+                    };
+
+                    mediaRecorder.start();
+                    btnAudio.className = "gravando";
+                    btnAudio.innerText = "🔴 Gravando... Parar";
+                } catch (err) {
+                    alert("Permissão de microfone negada ou erro de hardware: " + err);
+                }
+            } else if (mediaRecorder.state === "recording") {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+        };
+
+        async function processarAudioComIA(blob) {
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = async () => {
+                const base64Audio = reader.result.split(',')[1];
+
+                const promptMapeamento = `Você é um analisador de logs operacionais. Analise o áudio e extraia os dados estritamente no formato JSON estruturado abaixo.
+                Não adicione tags markdown (\`\`\`json), textos explicativos ou observações extras. Retorne apenas o JSON limpo.
+                Caso uma informação não seja mencionada, retorne string vazia ou null conforme indicado.
+
+                Mapeamento esperado:
+                {
+                  "protocolo": "string apenas com os 13 dígitos numéricos encontrados",
+                  "atendente": "nome da pessoa que atendeu ou string vazia",
+                  "central": "Acre" ou "Piauí" ou "Bahia" ou qualquer outro nome ditado (string vazia se oculto)",
+                  "duracao": número inteiro correspondente aos minutos relatados (ex: se falar 10m ou 10 minutos deve ser 10. Se falar 1 hora deve ser 60)",
+                  "trocas_realizadas": "SIM" ou "PARCIALMENTE" ou "NÃO",
+                  "observacoes": "Texto corrido descrevendo detalhadamente todos os problemas, queixas e comportamentos descritos no áudio"
+                }`;
+
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [
+                                    { inlineData: { mimeType: "audio/mp3", data: base64Audio } },
+                                    { text: promptMapeamento }
+                                ]
+                            }]
+                        })
+                    });
+
+                    const jsonResposta = await response.json();
+                    let textoPuro = jsonResposta.candidates[0].content.parts[0].text.trim();
+
+                    textoPuro = textoPuro.replace(/^```json/i, "").replace(/```$/, "").trim();
+
+                    const parseado = JSON.parse(textoPuro);
+
+                    if (parseado.protocolo) document.getElementById('err-protocolo').value = parseado.protocolo;
+                    if (parseado.atendente) document.getElementById('err-atendente').value = parseado.atendente;
+                    if (parseado.observacoes) document.getElementById('err-obs').value = parseado.observacoes;
+
+                    if (parseado.central) {
+                        let achouCentral = false;
+                        document.querySelectorAll('.btn-central').forEach(btn => {
+                            if (btn.dataset.val.toLowerCase() === parseado.central.toLowerCase()) {
+                                btn.click();
+                                achouCentral = true;
+                            }
+                        });
+                        if (!achouCentral) {
+                            document.getElementById('btn-central-mais').click();
+                            document.getElementById('err-central-outra').value = parseado.central;
+                        }
+                    }
+
+                    if (parseado.duracao) {
+                        let achouTempo = false;
+                        document.querySelectorAll('.pill-tempo').forEach(p => {
+                            if (p.dataset.val == parseado.duracao) {
+                                p.click();
+                                achouTempo = true;
+                            }
+                        });
+                        if (!achouTempo) {
+                            document.getElementById('btn-tempo-mais').click();
+                            document.getElementById('err-tempo-manual').value = parseado.duracao;
+                        }
+                    }
+
+                    if (parseado.trocas_realizadas) {
+                        document.querySelectorAll('#container-ura-main .pill').forEach(p => {
+                            if (p.dataset.val === parseado.trocas_realizadas.toUpperCase()) {
+                                p.click();
+                            }
+                        });
+                    }
+
+                } catch (fail) {
+                    console.error("Falha na requisição da API Gemini: ", fail);
+                    alert("Falha ao processar o áudio com inteligência artificial.");
+                } finally {
+                    btnAudio.className = "";
+                    btnAudio.innerText = "🎤 Gravar Áudio (Ditado IA)";
+                }
+            };
+        }
+
+        // ==================================================
+        // PROCESSAMENTO E ENVIO DO TEXTO FINAL
+        // ==================================================
         document.getElementById('btn-enviar-final').onclick = function() {
             const protInput = document.getElementById('err-protocolo');
             const protocolo = protInput.value.trim();
@@ -253,11 +387,7 @@
 
             let subLine = [];
             if (cenFinal) subLine.push(`Central: ${cenFinal}`);
-            if (tmpFinal) {
-                // Adiciona o 'm' apenas se o usuário digitou manualmente (já que as pílulas novas já vêm com 'm')
-                let sufixo = tempoSelecionado === 'manual' ? 'm' : '';
-                subLine.push(`Duração: ${tmpFinal}${sufixo}`);
-            }
+            if (tmpFinal) subLine.push(`Duração: ${tmpFinal}m`);
             if (subLine.length > 0) lines.push(subLine.join(' '));
 
             if (lines.length > 0) lines.push("");
